@@ -158,8 +158,8 @@ public class MyService extends Service {
 
                 if(Math.abs(roll*RAD2DGR) > 45){
                     Log.d("LOG","뒤집힘 : " + Math.abs(roll*RAD2DGR));
-                    Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                    vibrator.vibrate(100); // 0.5초간 진동
+                    //Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                    //vibrator.vibrate(100); // 0.5초간 진동
 
                     //setAlarmTimer();
                     roll = 0;
