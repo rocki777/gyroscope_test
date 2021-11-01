@@ -33,7 +33,7 @@ public class MyService extends Service {
     private static SensorManager mSensorManager = null;
 
     //Using the Gyroscope
-    private static SensorEventListener mGyroLis;
+    private static SensorEventListener mSenserLis;
     private Sensor mGgyroSensor = null;
 
     //Roll and Pitch
@@ -49,6 +49,11 @@ public class MyService extends Service {
     private double RAD2DGR = 180 / Math.PI;
     private static final float NS2S = 1.0f / 1000000000.0f;
     int roll_counter = 0;
+
+    private Sensor lightSensor;
+    double lightValue;
+
+
 
     @Override
     public void onCreate() {
@@ -104,76 +109,95 @@ public class MyService extends Service {
     }
 
     public void setSensorListener() {
-        //Using the Gyroscope & Accelometer
+
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+        //조도 센서 세팅
+        lightSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+        if( lightSensor == null ){
+            Log.d("LOG","No Light Sensor Found!");
+        }
 
         //Using the Accelometer
         mGgyroSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        mGyroLis = new GyroscopeListener();
+        mSenserLis = new SensorListener();
 
         //mSensorManager.registerListener(mGyroLis,mGgyroSensor,SensorManager.SENSOR_DELAY_NORMAL);
-        mSensorManager.registerListener(mGyroLis,mGgyroSensor,SensorManager.SENSOR_DELAY_UI);
+
+        mSensorManager.registerListener(mSenserLis, mGgyroSensor,SensorManager.SENSOR_DELAY_UI);
+        mSensorManager.registerListener(mSenserLis, lightSensor, SensorManager.SENSOR_DELAY_UI);
 
     }
 
 
     public static void unregisterListener() {
-        mSensorManager.unregisterListener(mGyroLis);
+        mSensorManager.unregisterListener(mSenserLis);
     }
 
 
-    private class GyroscopeListener implements SensorEventListener {
+    private class SensorListener implements SensorEventListener {
 
         @Override
         public void onSensorChanged(SensorEvent event) {
+            if( event.sensor.getType() == Sensor.TYPE_LIGHT){
+                lightValue = event.values[0];
+                //Log.d("LOG","조도센서 : " + lightValue );
 
-            double gyroX = event.values[0];
-            double gyroY = event.values[1];
-            double gyroZ = event.values[2];
+            }else {
+                double gyroX = event.values[0];
+                double gyroY = event.values[1];
+                double gyroZ = event.values[2];
 
-            dt = (event.timestamp - timestamp) * NS2S;
-            timestamp = event.timestamp;
-
-            /* 맨 센서 인식을 활성화 하여 처음 timestamp가 0일때는 dt값이 올바르지 않으므로 넘어간다. */
-            if (dt - timestamp*NS2S != 0) {
-
-                /* 각속도 성분을 적분 -> 회전각(pitch, roll)으로 변환.
-                 * 여기까지의 pitch, roll의 단위는 '라디안'이다.
-                 * SO 아래 로그 출력부분에서 멤버변수 'RAD2DGR'를 곱해주어 degree로 변환해줌.  */
-                pitch = pitch + gyroX*dt;
-                roll = roll + gyroY*dt;
-                yaw = yaw + gyroZ*dt;
+                dt = (event.timestamp - timestamp) * NS2S;
+                timestamp = event.timestamp;
 
 
-                if(Math.abs(roll * RAD2DGR) > 5) {
-                    Log.d("LOG", "GYROSCOPE "
-                            + "  [Pitch]:" + String.format("%.1f", pitch * RAD2DGR)
-                            + "  [Roll]:" + String.format("%.1f", roll * RAD2DGR)
-                            + "  [X]:" + String.format("%.4f", event.values[0])
-                            + "  [Y]:" + String.format("%.4f", event.values[1])
-                            + "  [Z]:" + String.format("%.4f", event.values[2])
-                            + "  [Yaw]:" + String.format("%.1f", yaw * RAD2DGR)
-                            + "  [dt]:" + String.format("%.4f", dt));
-                }
+                /* 맨 센서 인식을 활성화 하여 처음 timestamp가 0일때는 dt값이 올바르지 않으므로 넘어간다. */
+                if (dt - timestamp*NS2S != 0) {
 
-                if(Math.abs(roll*RAD2DGR) > 45){
-                    Log.d("LOG","뒤집힘 : " + Math.abs(roll*RAD2DGR));
-                    //Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-                    //vibrator.vibrate(100); // 0.5초간 진동
+                    /* 각속도 성분을 적분 -> 회전각(pitch, roll)으로 변환.
+                     * 여기까지의 pitch, roll의 단위는 '라디안'이다.
+                     * SO 아래 로그 출력부분에서 멤버변수 'RAD2DGR'를 곱해주어 degree로 변환해줌.  */
+                    pitch = pitch + gyroX*dt;
+                    roll = roll + gyroY*dt;
+                    yaw = yaw + gyroZ*dt;
 
-                    //setAlarmTimer();
-                    roll = 0;
-                }
 
-                if(Math.abs(gyroY) <= 0.001){
-                    roll_counter++;
-                    //Log.d("LOG","roll_counter:" + roll_counter);
-                    if(roll_counter >= 2) {
+                    if(Math.abs(roll * RAD2DGR) > 5) {
+                        Log.d("LOG", "GYROSCOPE "
+                                + "  [Pitch]:" + String.format("%.1f", pitch * RAD2DGR)
+                                + "  [Roll]:" + String.format("%.1f", roll * RAD2DGR)
+                                + "  [X]:" + String.format("%.4f", event.values[0])
+                                + "  [Y]:" + String.format("%.4f", event.values[1])
+                                + "  [Z]:" + String.format("%.4f", event.values[2])
+                                + "  [Yaw]:" + String.format("%.1f", yaw * RAD2DGR)
+                                + "  [dt]:" + String.format("%.4f", dt));
+                    }
+
+                    if(Math.abs(roll*RAD2DGR) > 45 && lightValue < 20){
+                        Log.d("LOG","뒤집힘 : " + Math.abs(roll*RAD2DGR) + "조도센서 : " + lightValue);
+                        /*
+                        long[] pattern = {100, 700, 100, 200};
+                        Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                        vibrator.vibrate(pattern, -1); //패턴진동, 반복 없음
+                        */
+
+                        //setAlarmTimer();
                         roll = 0;
-                        roll_counter = 0;
+                    }
+
+                    if(Math.abs(gyroY) <= 0.001){
+                        roll_counter++;
+                        //Log.d("LOG","roll_counter:" + roll_counter);
+                        if(roll_counter >= 2) {
+                            roll = 0;
+                            roll_counter = 0;
+                        }
                     }
                 }
             }
+
+
         }
 
         @Override
