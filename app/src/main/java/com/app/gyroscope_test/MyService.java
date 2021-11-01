@@ -15,7 +15,6 @@ import android.hardware.SensorManager;
 import android.icu.util.Calendar;
 import android.os.Build;
 import android.os.IBinder;
-import android.os.Vibrator;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -54,6 +53,9 @@ public class MyService extends Service {
     double lightValue;
 
 
+    //Using the Accelometer
+
+    private Sensor mAccelometerSensor = null;
 
     @Override
     public void onCreate() {
@@ -118,14 +120,15 @@ public class MyService extends Service {
             Log.d("LOG","No Light Sensor Found!");
         }
 
-        //Using the Accelometer
+
+        mAccelometerSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
         mGgyroSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         mSenserLis = new SensorListener();
 
-        //mSensorManager.registerListener(mGyroLis,mGgyroSensor,SensorManager.SENSOR_DELAY_NORMAL);
-
         mSensorManager.registerListener(mSenserLis, mGgyroSensor,SensorManager.SENSOR_DELAY_UI);
         mSensorManager.registerListener(mSenserLis, lightSensor, SensorManager.SENSOR_DELAY_UI);
+        mSensorManager.registerListener(mSenserLis, mAccelometerSensor,SensorManager.SENSOR_DELAY_UI);
 
     }
 
@@ -143,7 +146,21 @@ public class MyService extends Service {
                 lightValue = event.values[0];
                 //Log.d("LOG","조도센서 : " + lightValue );
 
-            }else {
+            }else if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                double accX = event.values[0];
+                double accY = event.values[1];
+                double accZ = event.values[2];
+
+                double angleXZ = Math.atan2(accX,  accZ) * 180/Math.PI;
+                double angleYZ = Math.atan2(accY,  accZ) * 180/Math.PI;
+
+                Log.e("LOG", "ACCELOMETER           [X]:" + String.format("%.4f", event.values[0])
+                        + "           [Y]:" + String.format("%.4f", event.values[1])
+                        + "           [Z]:" + String.format("%.4f", event.values[2])
+                        + "           [angleXZ]: " + String.format("%.4f", angleXZ)
+                        + "           [angleYZ]: " + String.format("%.4f", angleYZ));
+
+            }else{
                 double gyroX = event.values[0];
                 double gyroY = event.values[1];
                 double gyroZ = event.values[2];
@@ -164,6 +181,7 @@ public class MyService extends Service {
 
 
                     if(Math.abs(roll * RAD2DGR) > 5) {
+                        /*
                         Log.d("LOG", "GYROSCOPE "
                                 + "  [Pitch]:" + String.format("%.1f", pitch * RAD2DGR)
                                 + "  [Roll]:" + String.format("%.1f", roll * RAD2DGR)
@@ -172,10 +190,12 @@ public class MyService extends Service {
                                 + "  [Z]:" + String.format("%.4f", event.values[2])
                                 + "  [Yaw]:" + String.format("%.1f", yaw * RAD2DGR)
                                 + "  [dt]:" + String.format("%.4f", dt));
+
+                         */
                     }
 
                     if(Math.abs(roll*RAD2DGR) > 45 && lightValue < 20){
-                        Log.d("LOG","뒤집힘 : " + Math.abs(roll*RAD2DGR) + "조도센서 : " + lightValue);
+                        //Log.d("LOG","뒤집힘 : " + Math.abs(roll*RAD2DGR) + "조도센서 : " + lightValue);
                         /*
                         long[] pattern = {100, 700, 100, 200};
                         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
