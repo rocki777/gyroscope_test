@@ -15,6 +15,7 @@ import android.hardware.SensorManager;
 import android.icu.util.Calendar;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.Vibrator;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -154,13 +155,29 @@ public class MyService extends Service {
                 double angleXZ = Math.atan2(accX,  accZ) * 180/Math.PI;
                 double angleYZ = Math.atan2(accY,  accZ) * 180/Math.PI;
 
-                Log.e("LOG", "ACCELOMETER           [X]:" + String.format("%.4f", event.values[0])
-                        + "           [Y]:" + String.format("%.4f", event.values[1])
-                        + "           [Z]:" + String.format("%.4f", event.values[2])
-                        + "           [angleXZ]: " + String.format("%.4f", angleXZ)
-                        + "           [angleYZ]: " + String.format("%.4f", angleYZ));
+                Log.d("LOG", "ACCELOMETER   [X]:" + String.format("%.1f", event.values[0])
+                        + "  [Y]:" + String.format("%.1f", event.values[1])
+                        + "  [Z]:" + String.format("%.1f", event.values[2])
+                        + "  [angleXZ]: " + String.format("%.1f", angleXZ)
+                        + "  [angleYZ]: " + String.format("%.1f", angleYZ));
 
-            }else{
+
+                if(angleXZ > 170 && lightValue < 20) {
+                    Log.d("LOG","뒤집힘 : " + Math.abs(roll*RAD2DGR) + "조도센서 : " + lightValue);
+                    startREC();
+
+
+
+                }
+
+            }
+
+
+
+
+            /*
+            else{
+
                 double gyroX = event.values[0];
                 double gyroY = event.values[1];
                 double gyroZ = event.values[2];
@@ -169,19 +186,19 @@ public class MyService extends Service {
                 timestamp = event.timestamp;
 
 
-                /* 맨 센서 인식을 활성화 하여 처음 timestamp가 0일때는 dt값이 올바르지 않으므로 넘어간다. */
+                // 맨 센서 인식을 활성화 하여 처음 timestamp가 0일때는 dt값이 올바르지 않으므로 넘어간다.
                 if (dt - timestamp*NS2S != 0) {
 
-                    /* 각속도 성분을 적분 -> 회전각(pitch, roll)으로 변환.
-                     * 여기까지의 pitch, roll의 단위는 '라디안'이다.
-                     * SO 아래 로그 출력부분에서 멤버변수 'RAD2DGR'를 곱해주어 degree로 변환해줌.  */
+                    // 각속도 성분을 적분 -> 회전각(pitch, roll)으로 변환.
+                    //  여기까지의 pitch, roll의 단위는 '라디안'이다.
+                    //  SO 아래 로그 출력부분에서 멤버변수 'RAD2DGR'를 곱해주어 degree로 변환해줌.
                     pitch = pitch + gyroX*dt;
                     roll = roll + gyroY*dt;
                     yaw = yaw + gyroZ*dt;
 
 
                     if(Math.abs(roll * RAD2DGR) > 5) {
-                        /*
+
                         Log.d("LOG", "GYROSCOPE "
                                 + "  [Pitch]:" + String.format("%.1f", pitch * RAD2DGR)
                                 + "  [Roll]:" + String.format("%.1f", roll * RAD2DGR)
@@ -191,16 +208,16 @@ public class MyService extends Service {
                                 + "  [Yaw]:" + String.format("%.1f", yaw * RAD2DGR)
                                 + "  [dt]:" + String.format("%.4f", dt));
 
-                         */
+
                     }
 
                     if(Math.abs(roll*RAD2DGR) > 45 && lightValue < 20){
                         //Log.d("LOG","뒤집힘 : " + Math.abs(roll*RAD2DGR) + "조도센서 : " + lightValue);
-                        /*
+
                         long[] pattern = {100, 700, 100, 200};
                         Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                         vibrator.vibrate(pattern, -1); //패턴진동, 반복 없음
-                        */
+
 
                         //setAlarmTimer();
                         roll = 0;
@@ -215,7 +232,9 @@ public class MyService extends Service {
                         }
                     }
                 }
-            }
+
+                */
+
 
 
         }
@@ -225,7 +244,15 @@ public class MyService extends Service {
         }
     }
 
+    public void startREC(){
+        //녹음 시작
+        long[] pattern = {100, 700, 100, 200};
+        Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        vibrator.vibrate(pattern, -1); //패턴진동, 반복 없음
+        mSensorManager.unregisterListener(mSenserLis);
 
+
+    }
 
 
     @Override
