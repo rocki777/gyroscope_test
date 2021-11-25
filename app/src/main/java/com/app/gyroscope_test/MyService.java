@@ -13,12 +13,24 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.icu.util.Calendar;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.os.Build;
+import android.os.Environment;
 import android.os.IBinder;
 import android.os.Vibrator;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
+
+import java.io.File;
+
+/*
+import com.yanzhenjie.permission.Action;
+import com.yanzhenjie.permission.AndPermission;
+import com.yanzhenjie.permission.runtime.Permission;
+*/
+
 
 public class MyService extends Service {
 
@@ -51,16 +63,45 @@ public class MyService extends Service {
     int roll_counter = 0;
 
     private Sensor lightSensor;
+    private Sensor mAccelometerSensor;
     double lightValue;
 
+    MediaRecorder recorder;
+    MediaPlayer player;
 
-    //Using the Accelometer
-
-    private Sensor mAccelometerSensor = null;
+    File file;
+    String filename;
 
     @Override
     public void onCreate() {
         super.onCreate();
+
+        file = getOutputFile();
+        if (file != null) {
+            filename = file.getAbsolutePath();
+        }
+/*
+        AndPermission.with(this)
+                .runtime()
+                .permission(
+                        Permission.RECORD_AUDIO,
+                        Permission.READ_EXTERNAL_STORAGE,
+                        Permission.WRITE_EXTERNAL_STORAGE)
+                .onGranted(new Action<List<String>>() {
+                    @Override
+                    public void onAction(List<String> permissions) {
+                        showToast("허용된 권한 갯수 : " + permissions.size());
+                    }
+                })
+                .onDenied(new Action<List<String>>() {
+                    @Override
+                    public void onAction(List<String> permissions) {
+                        showToast("거부된 권한 갯수 : " + permissions.size());
+                    }
+                })
+                .start();
+
+*/
     }
 
     @Override
@@ -251,6 +292,12 @@ public class MyService extends Service {
         vibrator.vibrate(pattern, -1); //패턴진동, 반복 없음
         mSensorManager.unregisterListener(mSenserLis);
 
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent myIntent = new Intent(getApplicationContext(),AlarmRecever.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, myIntent, 0);
+
+        alarmManager.cancel(pendingIntent);
+
 
     }
 
@@ -262,6 +309,7 @@ public class MyService extends Service {
         setAlarmTimer();
     }
 
+    AlarmManager mAlarmManager;
 
     protected void setAlarmTimer() {
         Log.d("LOG", "set alarm");
@@ -271,7 +319,7 @@ public class MyService extends Service {
         Intent intent = new Intent(this, AlarmRecever.class);
         PendingIntent sender = PendingIntent.getBroadcast(this, 0,intent,0);
 
-        AlarmManager mAlarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        mAlarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         //mAlarmManager.set(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), sender);
 
         mAlarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), sender);
@@ -282,5 +330,26 @@ public class MyService extends Service {
     public IBinder onBind(Intent intent) {
         // TODO: Return the communication channel to the service.
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+
+    public File getOutputFile() {
+        File mediaFile = null;
+        try {
+            File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_PICTURES), "MyApp");
+            if (!mediaStorageDir.exists()){
+                if (!mediaStorageDir.mkdirs()){
+                    Log.d("MyCameraApp", "failed to create directory");
+                    return null;
+                }
+            }
+
+            mediaFile = new File(mediaStorageDir.getPath() + File.separator + "recorded.mp4");
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+
+        return mediaFile;
     }
 }
