@@ -298,7 +298,7 @@ public class MyService extends Service {
 
         alarmManager.cancel(pendingIntent);
 
-
+        //11.25 서비스 안죽음, 아예 죽이는 법을 찾아봐야 함.
     }
 
 
